@@ -2,50 +2,31 @@ import fs from 'fs'
 import { text as rowText } from './text'
 import trans from './translate'
 
-let resultContainer: string[] = ['']
-let containerIdx = 0
+const writeTextToFiles = (rowArr: string[], transArr: string[]) => {
+  console.log(rowArr)
+  console.log(transArr)
 
-const addText = (text: string) => {
-  const lineLength = text.length
-  const end = text[lineLength - 1]
-
-  const result = end !== '.' ? ` ${text}` : ` ${text}\n\n`
-
-  resultContainer[containerIdx] += result
-
-  if (resultContainer[containerIdx].length > 4500 && end === '.') {
-    containerIdx++
-    resultContainer[containerIdx] = ''
-  }
-}
-
-const writeTextToFiles = () => {
-  resultContainer.forEach((value, index) => {
-    fs.writeFileSync(`./result/${index}.txt`, value)
-    console.log(value.length)
+  let result: string = ''
+  rowArr.forEach((value, index) => {
+    result = result.concat([value, transArr[index], '\n'].join('\n'))
   })
+  fs.writeFileSync('./result.txt', result)
 }
 
 const init = () => {
-  rowText
-    .split('\n')
-    .filter(line => line.length)
-    .forEach(line => {
-      line = line.trim()
-      addText(line)
-    })
-  writeTextToFiles()
-  // trans()
-  // translate('Ik spreek Engels', { to: 'en' })
-  //   .then(res => {
-  //     console.log(res.text)
-  //     //=> I speak English
-  //     console.log(res.from.language.iso)
-  //     //=> nl
-  //   })
-  //   .catch(err => {
-  //     console.error(err)
-  //   })
+  const rowArr = rowText
+    .split('\n\n')
+    .join(' ')
+    .split(/\./)
+    .filter(value => value.length > 1)
+    .map(value => value.trim() + '.')
+
+  console.log(rowArr)
+
+  const translatedArr = rowArr.map(value => trans(value, 'ko'))
+  Promise.all(translatedArr).then(transArr => {
+    writeTextToFiles(rowArr, transArr)
+  })
 }
 
 init()
